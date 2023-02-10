@@ -5,18 +5,65 @@ import { FC, useEffect, useState } from "react"
 import styles from "../styles/custom.module.css"
 
 export const FetchCandyMachine: FC = () => {
-  const [candyMachineAddress, setCandyMachineAddress] = useState(null)
+  const [candyMachineAddress, setCandyMachineAddress] = useState("<YOUR-CANDY-MACHINE-ADDRESS>")
   const [candyMachineData, setCandyMachineData] = useState(null)
   const [pageItems, setPageItems] = useState(null)
   const [page, setPage] = useState(1)
 
-  const fetchCandyMachine = async () => {}
+  const { connection } = useConnection()
+  const metaplex = Metaplex.make(connection)
 
-  const getPage = async (page, perPage) => {}
+  const fetchCandyMachine = async () => {
+    setPage(1)
+    
+    try {
+      const candyMachine = await metaplex.candyMachines().findByAddress({ address: new PublicKey(candyMachineAddress) }).run()
 
-  const prev = async () => {}
+      setCandyMachineData(candyMachine)
+    } catch (err) {
+      console.log(err)
+      alert("Please submit a cm2 address")
+    }
+  }
 
-  const next = async () => {}
+  const getPage = async (page, perPage) => {
+    const pageItems = candyMachineData.items.slice(
+      (page - 1) * perPage,
+      page * perPage
+    )
+
+    let nftData = []
+    for(let i = 0; i < pageItems.length; i++) {
+      let fetchResult = await fetch(pageItems[i].uri)
+      let json = await  fetchResult.json()
+      nftData.push(json)
+    }
+
+    setPageItems(nftData)
+  }
+
+  const prev = async () => {
+    if(page - 1 < 1 ) {
+      setPage(1)
+    } else {
+      setPage(page - 1)
+    }
+  }
+
+  const next = async () => {
+    setPage(page + 1)
+  }
+
+  useEffect(() => {
+    fetchCandyMachine()
+  }, [])
+
+  useEffect(() => {
+    if(!candyMachineData) {
+      return
+    }
+    getPage(page, 9)
+  }, [candyMachineData, page])
 
   return (
     <div>
